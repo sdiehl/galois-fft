@@ -1,3 +1,9 @@
+<p align="center">
+<a href="https://www.adjoint.io">
+  <img width="250" src="./.assets/adjoint.png" alt="Adjoint Logo" />
+</a>
+</p>
+
 # galois-fft
 
 Fast Fourier Transforms over finite fields. Provides functionality for
