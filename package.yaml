@@ -1,0 +1,61 @@
+name:        galois-fft
+version:     0.1.0
+synopsis:    FFTs over finite fields
+description: FFTs over finite fields
+maintainer:  Adjoint Inc (info@adjoint.io)
+license:     MIT
+github:      adjoint-io/galois-fft
+category:    Cryptography
+
+default-extensions:
+  - LambdaCase
+  - OverloadedStrings
+  - NoImplicitPrelude
+
+dependencies:
+  - base >= 4.10 && < 5
+  - protolude >= 0.2 && < 0.3
+  - vector >= 0.12 && < 0.13
+  - poly >= 0.3.2
+  - elliptic-curve >= 0.3 && < 0.4
+  - galois-field >= 1 && < 2
+
+extra-source-files:
+  - README.md
+  - ChangeLog.md
+
+ghc-options:
+  - -freverse-errors
+  - -O2
+  - -Wall
+
+library:
+  exposed-modules:
+    - FFT
+  source-dirs:
+    - src
+
+tests:
+  fft-tests:
+    main: Main
+    dependencies:
+      - galois-fft
+      - pairing
+      - QuickCheck
+      - quickcheck-instances
+      - tasty
+      - tasty-discover
+      - tasty-hunit
+      - tasty-quickcheck
+    source-dirs:
+      - test
+
+benchmarks:
+  fft-benchmarks:
+    main: Main
+    dependencies:
+      - criterion
+      - pairing
+      - galois-fft
+    source-dirs:
+      - bench
