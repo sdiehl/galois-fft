@@ -35,7 +35,8 @@ rightCoeffs = map fromIntegral (reverse [1..polySize])
 
 main :: IO ()
 main = do
-  print <img src="/tex/e8d2f81a3c6e3c8456c35053b24a52aa.svg?invert_in_darkmode&sanitize=true" align=middle width=325.31793689999995pt height=22.831056599999986pt/> fftMult getRootOfUnity leftCoeffs rightCoeffs
+  print (interpolate getRootOfUnity leftCoeffs)
+  print (fftMult getRootOfUnity leftCoeffs rightCoeffs)
   pure ()
 ```
 
