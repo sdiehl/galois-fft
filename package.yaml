@@ -1,7 +1,7 @@
 name:        galois-fft
 version:     0.1.0
 synopsis:    FFTs over finite fields
-description: FFTs over finite fields
+description: Finite field polynomial arithmetic based on fast Fourier transforms
 maintainer:  Adjoint Inc (info@adjoint.io)
 license:     MIT
 github:      adjoint-io/galois-fft

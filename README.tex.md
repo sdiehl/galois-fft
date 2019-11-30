@@ -6,21 +6,20 @@
 
 # galois-fft
 
-Fast Fourier Transforms over finite fields. Provides functionality for
-polynomial evaluation, polynomial interpolation, and computation of Lagrange
-polynomials.
+The library provides Fast Fourier Transforms over finite fields with
+functionality for polynomial evaluation, polynomial interpolation, and
+computation of Lagrange polynomials.
 
-In a finite field F with 2^m elements. We can define a discrete Fourier
-transform by selecting 2^m - 1 roots of unity ω ∈ F.
+In a finite field $\mathbb{F}$ with $2^m$ elements. We can define a discrete Fourier
+transform by selecting $2^m - 1$ roots of unity $\omega \in \mathbb{F}$.
 
 ## Example
-
 
 ```haskell
 import Protolude
 
 import Data.Curve.Weierstrass.BN254 (Fr)
-import Data.Pairing.BN254           (getRootOfUnity)
+import Data.Pairing.BN254 (getRootOfUnity)
 
 import FFT
 
@@ -44,7 +43,7 @@ main = do
 ## License
 
 ```
-Copyright (c) 2018-2019 Adjoint Inc.
+Copyright (c) 2018-2020 Adjoint Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

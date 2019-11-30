@@ -1,22 +1,23 @@
-{-# LANGUAGE ScopedTypeVariables, TupleSections #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections #-}
 
 -- | Discrete Fourier transforms for polynomial interpolation
 module FFT
-  ( CoeffVec
-  , dftNaive
-  , fft
-  , fftMult
-  , fftTargetPoly
-  , interpolate
-  , inverseDft
-  ) where
+  ( CoeffVec,
+    dftNaive,
+    fft,
+    fftMult,
+    fftTargetPoly,
+    interpolate,
+    inverseDft,
+  )
+where
 
+import Data.Field.Galois (GaloisField, pow)
+import qualified Data.List as List
+import Data.Poly (VPoly, monomial, toPoly)
+import Data.Vector (fromList)
 import Protolude
-
-import           Data.Field.Galois (GaloisField, pow)
-import qualified Data.List         as List
-import           Data.Poly         (VPoly, monomial, toPoly)
-import           Data.Vector       (fromList)
 
 -- | Polynomial represented as a coefficient vector, little-endian
 type CoeffVec f = [f]
@@ -32,17 +33,19 @@ evalPoly coeffs x = foldr (\c rest -> c + x * rest) 0 coeffs
 
 -- | Naive discrete Fourier transformation performed by evaluating the
 -- polynomial at the appropriate roots of unity.
-dftNaive
-  :: Num f
-  => f -- ^ principal 2^k-th root of unity
-  -> CoeffVec f -- ^ polynomial coefficients, length should be 2^k for
-                -- some k
-  -> DFT f
-dftNaive omega_n as = map (\i -> evalPoly as (omega_n ^ i)) [0..length as - 1]
+dftNaive ::
+  Num f =>
+  -- | principal 2^k-th root of unity
+  f ->
+  -- | polynomial coefficients, length should be 2^k for
+  -- some k
+  CoeffVec f ->
+  DFT f
+dftNaive omega_n as = map (\i -> evalPoly as (omega_n ^ i)) [0 .. length as - 1]
 
 -- | Split a list into a list containing the odd-numbered and one with
 -- the even-numbered elements.
-split :: [a] -> ([a],[a])
+split :: [a] -> ([a], [a])
 split = foldr (\a (r1, r2) -> (a : r2, r1)) ([], [])
 
 -- | Calculate ceiling of log base 2 of an integer.
@@ -50,38 +53,40 @@ log2 :: Int -> Int
 log2 x = floorLog + correction
   where
     floorLog = finiteBitSize x - 1 - countLeadingZeros x
-    correction = if countTrailingZeros x < floorLog
-                 then 1
-                 else 0
+    correction =
+      if countTrailingZeros x < floorLog
+        then 1
+        else 0
 
 -- | Fast Fourier transformation.
-fft
-  :: GaloisField k
-  => (Int -> k) -- ^ function that gives for input n the principal (2^n)-th root of unity
-  -> CoeffVec k -- ^ length should be n
-  -> DFT k
-fft omega_n as
-  = case length as of
-      1 -> as
-      n ->
-        let
-          (as0, as1) = split as
+fft ::
+  GaloisField k =>
+  -- | function that gives for input n the principal (2^n)-th root of unity
+  (Int -> k) ->
+  -- | length should be n
+  CoeffVec k ->
+  DFT k
+fft omega_n as =
+  case length as of
+    1 -> as
+    n ->
+      let (as0, as1) = split as
           y0 = fft omega_n as0
           y1 = fft omega_n as1
-          omegas = map (pow (omega_n (log2 n))) [0..n]
-        in combine y0 y1 omegas
+          omegas = map (pow (omega_n (log2 n))) [0 .. n]
+       in combine y0 y1 omegas
   where
-    combine y0 y1 omegas
-      = (\xs -> map fst xs ++ map snd xs)
-      $ map (\(yk0, yk1, currentOmega) -> (yk0 + currentOmega * yk1, yk0 - currentOmega * yk1))
-      $ List.zip3 y0 y1 omegas
+    combine y0 y1 omegas =
+      (\xs -> map fst xs ++ map snd xs)
+        $ map (\(yk0, yk1, currentOmega) -> (yk0 + currentOmega * yk1, yk0 - currentOmega * yk1))
+        $ List.zip3 y0 y1 omegas
 
 -- | Inverse discrete Fourier transformation, uses FFT.
 inverseDft :: GaloisField k => (Int -> k) -> DFT k -> CoeffVec k
-inverseDft primRootsUnity dft
-  = let n = fromIntegral . length $ dft
-    in map (/ n)
-    $ fft (recip . primRootsUnity) dft
+inverseDft primRootsUnity dft =
+  let n = fromIntegral . length $ dft
+   in map (/ n) $
+        fft (recip . primRootsUnity) dft
 
 -- | Append minimal amount of zeroes until the list has a length which
 -- is a power of two.
@@ -90,11 +95,14 @@ padToNearestPowerOfTwo [] = []
 padToNearestPowerOfTwo xs = padToNearestPowerOfTwoOf (length xs) xs
 
 -- | Given n, append zeroes until the list has length 2^n.
-padToNearestPowerOfTwoOf
-  :: Num f
-  => Int -- ^ n
-  -> [f] -- ^ list which should have length <= 2^n
-  -> [f] -- ^ list which will have length 2^n
+padToNearestPowerOfTwoOf ::
+  Num f =>
+  -- | n
+  Int ->
+  -- | list which should have length <= 2^n
+  [f] ->
+  -- | list which will have length 2^n
+  [f]
 padToNearestPowerOfTwoOf i xs = xs ++ replicate padLength 0
   where
     padLength = nearestPowerOfTwo - length xs
@@ -125,8 +133,8 @@ fftMult primRoots l r = inverseDft primRoots $ zipWith (*) dftL dftR
 
 -- XXX make this actually use FFT mult
 fftTargetPoly :: GaloisField k => (Int -> k) -> Int -> VPoly k
-fftTargetPoly primRoots numRoots
-  = foldl' (*) (monomial 0 1) ((\i -> toPoly . fromList $ [-pow omega i, 1]) <$> [0.. 2^k - 1 :: Integer])
+fftTargetPoly primRoots numRoots =
+  foldl' (*) (monomial 0 1) ((\i -> toPoly . fromList $ [- pow omega i, 1]) <$> [0 .. 2 ^ k - 1 :: Integer])
   where
     k = log2 numRoots
     omega = primRoots k
