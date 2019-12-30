@@ -2,10 +2,10 @@
 *.sw[pon]
 *.prof
 *.prof.html
-galois-fft.cabal
 *~
 *.hi
 *.o
 .ghc.environment.*
 dist*/
 TAGS
+dist-newstyle
