@@ -9,6 +9,7 @@ import Data.Curve.Weierstrass.BN254 (Fr)
 import Data.Pairing.BN254           (getRootOfUnity)
 
 import FFT
+import qualified Data.Vector as V
 
 k :: Int
 k = 5
@@ -16,16 +17,15 @@ k = 5
 polySize :: Int
 polySize = 2^k
 
-leftCoeffs, rightCoeffs :: [Fr]
-leftCoeffs = map fromIntegral [1..polySize]
-rightCoeffs = map fromIntegral (reverse [1..polySize])
+leftCoeffs, rightCoeffs :: V.Vector Fr
+leftCoeffs = V.generate polySize fromIntegral
+rightCoeffs = V.generate polySize (fromIntegral . (polySize -))
 
-points :: [(Fr,Fr)]
+points :: V.Vector (Fr,Fr)
 points
-  = map (\i -> (getRootOfUnity k ^ i, fromIntegral i))
-        [1..polySize]
+  = V.generate polySize (\i -> (getRootOfUnity k ^ i, fromIntegral i))
 
-fftPoints :: [Fr]
+fftPoints :: V.Vector Fr
 fftPoints = map snd points
 
 benchmarks :: [Benchmark]

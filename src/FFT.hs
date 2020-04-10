@@ -14,18 +14,18 @@ module FFT
 where
 
 import Data.Field.Galois (GaloisField, pow)
-import qualified Data.List as List
 import Data.Poly (VPoly, monomial, toPoly)
 import Data.Vector (fromList)
+import qualified Data.Vector as V
 import Protolude
 
 -- | Polynomial represented as a coefficient vector, little-endian
-type CoeffVec f = [f]
+type CoeffVec f = V.Vector f
 
 -- | Discrete Fourier transform. Can be interpreted as some polynomial
 -- evaluated at certain roots of unity. (In our case the length of
 -- these lists will be a power of two.)
-type DFT f = [f]
+type DFT f = V.Vector f
 
 -- | Evaluate a polynomial given by its coefficient vector
 evalPoly :: Num f => CoeffVec f -> f -> f
@@ -41,12 +41,16 @@ dftNaive ::
   -- some k
   CoeffVec f ->
   DFT f
-dftNaive omega_n as = map (\i -> evalPoly as (omega_n ^ i)) [0 .. length as - 1]
+dftNaive omega_n as = V.generate (length as) (\i -> evalPoly as (omega_n ^ i))
 
 -- | Split a list into a list containing the odd-numbered and one with
 -- the even-numbered elements.
-split :: [a] -> ([a], [a])
-split = foldr (\a (r1, r2) -> (a : r2, r1)) ([], [])
+split :: V.Vector a -> (V.Vector a, V.Vector a)
+split xs = (V.generate l1 (\i -> xs V.! (i `shiftL` 1)), V.generate l2 (\i -> xs V.! (i `shiftL` 1 + 1)))
+  where
+    l = V.length xs
+    l1 = (l + 1) `shiftR` 1
+    l2 = l `shiftR` 1
 
 -- | Calculate ceiling of log base 2 of an integer.
 log2 :: Int -> Int
@@ -73,13 +77,14 @@ fft omega_n as =
       let (as0, as1) = split as
           y0 = fft omega_n as0
           y1 = fft omega_n as1
-          omegas = map (pow (omega_n (log2 n))) [0 .. n]
+          omegas = V.generate (n + 1) (pow (omega_n (log2 n)))
        in combine y0 y1 omegas
   where
-    combine y0 y1 omegas =
-      (\xs -> map fst xs ++ map snd xs)
-        $ map (\(yk0, yk1, currentOmega) -> (yk0 + currentOmega * yk1, yk0 - currentOmega * yk1))
-        $ List.zip3 y0 y1 omegas
+    combine y0 y1 omegas
+      =  V.generate l (\i -> y0 V.! i + omegas V.! i * y1 V.! i)
+      <> V.generate l (\i -> y0 V.! i - omegas V.! i * y1 V.! i)
+      where
+        l = V.length y0
 
 -- | Inverse discrete Fourier transformation, uses FFT.
 inverseDft :: GaloisField k => (Int -> k) -> DFT k -> CoeffVec k
@@ -90,9 +95,10 @@ inverseDft primRootsUnity dft =
 
 -- | Append minimal amount of zeroes until the list has a length which
 -- is a power of two.
-padToNearestPowerOfTwo :: Num f => [f] -> [f]
-padToNearestPowerOfTwo [] = []
-padToNearestPowerOfTwo xs = padToNearestPowerOfTwoOf (length xs) xs
+padToNearestPowerOfTwo :: Num f => V.Vector f -> V.Vector f
+padToNearestPowerOfTwo xs
+  | V.null xs = xs
+  | otherwise = padToNearestPowerOfTwoOf (length xs) xs
 
 -- | Given n, append zeroes until the list has length 2^n.
 padToNearestPowerOfTwoOf ::
@@ -100,21 +106,21 @@ padToNearestPowerOfTwoOf ::
   -- | n
   Int ->
   -- | list which should have length <= 2^n
-  [f] ->
+  V.Vector f ->
   -- | list which will have length 2^n
-  [f]
-padToNearestPowerOfTwoOf i xs = xs ++ replicate padLength 0
+  V.Vector f
+padToNearestPowerOfTwoOf i xs = xs <> V.replicate padLength 0
   where
     padLength = nearestPowerOfTwo - length xs
     nearestPowerOfTwo = bit $ log2 i
 
 -- | Create a polynomial that goes through the given values.
-interpolate :: GaloisField k => (Int -> k) -> [k] -> VPoly k
-interpolate primRoots pts = toPoly . fromList $ inverseDft primRoots (padToNearestPowerOfTwo pts)
+interpolate :: GaloisField k => (Int -> k) -> V.Vector k -> VPoly k
+interpolate primRoots pts = toPoly $ inverseDft primRoots (padToNearestPowerOfTwo pts)
 
 -- | Multiply polynomials using FFT
 fftMult :: GaloisField k => (Int -> k) -> CoeffVec k -> CoeffVec k -> CoeffVec k
-fftMult primRoots l r = inverseDft primRoots $ zipWith (*) dftL dftR
+fftMult primRoots l r = inverseDft primRoots $ V.zipWith (*) dftL dftR
   where
     n = 2 * max (length l) (length r)
     paddedDft x = fft primRoots (padToNearestPowerOfTwoOf n x)

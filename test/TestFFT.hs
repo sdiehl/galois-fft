@@ -6,6 +6,7 @@ import Data.Curve.Weierstrass.BN254 (Fr)
 import Data.Field.Galois
 import Data.Pairing.BN254 (getRootOfUnity)
 import FFT
+import qualified GHC.Exts
 import Protolude
 import Test.Tasty.HUnit
 import Test.Tasty.QuickCheck
@@ -17,7 +18,7 @@ testExp :: Int
 testExp = 8
 
 instance Arbitrary f => Arbitrary (TestPoly f) where
-  arbitrary = TestPoly <$> vectorOf (2 ^ testExp) arbitrary
+  arbitrary = TestPoly . GHC.Exts.fromList <$> vectorOf (2 ^ testExp) arbitrary
 
 omega :: Fr
 omega = getRootOfUnity testExp
