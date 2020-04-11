@@ -16,27 +16,30 @@ transform by selecting <img src="/tex/1683127d6422f667f0fd702f2d9f7d89.svg?inver
 ## Example
 
 ```haskell
-import Protolude
+{-# LANGUAGE NoImplicitPrelude #-}
+
+module Interpolation where
 
 import Data.Curve.Weierstrass.BN254 (Fr)
 import Data.Pairing.BN254 (getRootOfUnity)
-
+import qualified Data.Vector as V
 import FFT
+import Protolude
 
 k :: Int
 k = 5
 
 polySize :: Int
-polySize = 2^k
+polySize = 2 ^ k
 
-leftCoeffs, rightCoeffs :: [Fr]
-leftCoeffs = map fromIntegral [1..polySize]
-rightCoeffs = map fromIntegral (reverse [1..polySize])
+leftCoeffs, rightCoeffs :: V.Vector Fr
+leftCoeffs  = V.generate polySize fromIntegral
+rightCoeffs = V.generate polySize (fromIntegral . (polySize -))
 
 main :: IO ()
 main = do
-  print (interpolate getRootOfUnity leftCoeffs)
-  print (fftMult getRootOfUnity leftCoeffs rightCoeffs)
+  print $ interpolate getRootOfUnity leftCoeffs
+  print $ fftMult getRootOfUnity leftCoeffs rightCoeffs
   pure ()
 ```
 
