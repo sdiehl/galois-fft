@@ -89,8 +89,8 @@ fft omega_n as =
 -- | Inverse discrete Fourier transformation, uses FFT.
 inverseDft :: GaloisField k => (Int -> k) -> DFT k -> CoeffVec k
 inverseDft primRootsUnity dft =
-  let n = fromIntegral . length $ dft
-   in map (/ n) $
+  let invN = recip $ fromIntegral $ length dft
+   in map (* invN) $
         fft (recip . primRootsUnity) dft
 
 -- | Append minimal amount of zeroes until the list has a length which
