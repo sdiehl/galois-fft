@@ -15,6 +15,7 @@ where
 
 import Data.Field.Galois (GaloisField, pow)
 import Data.Poly (VPoly, monomial, toPoly)
+import Data.Poly.Semiring (dft)
 import Data.Vector (fromList)
 import qualified Data.Vector as V
 import Protolude
@@ -43,15 +44,6 @@ dftNaive ::
   DFT f
 dftNaive omega_n as = V.generate (length as) (\i -> evalPoly as (omega_n ^ i))
 
--- | Split a list into a list containing the odd-numbered and one with
--- the even-numbered elements.
-split :: V.Vector a -> (V.Vector a, V.Vector a)
-split xs = (V.generate l1 (\i -> xs V.! (i `shiftL` 1)), V.generate l2 (\i -> xs V.! (i `shiftL` 1 + 1)))
-  where
-    l = V.length xs
-    l1 = (l + 1) `shiftR` 1
-    l2 = l `shiftR` 1
-
 -- | Calculate ceiling of log base 2 of an integer.
 log2 :: Int -> Int
 log2 x = floorLog + correction
@@ -70,21 +62,7 @@ fft ::
   -- | length should be n
   CoeffVec k ->
   DFT k
-fft omega_n as =
-  case length as of
-    1 -> as
-    n ->
-      let (as0, as1) = split as
-          y0 = fft omega_n as0
-          y1 = fft omega_n as1
-          omegas = V.generate (n + 1) (pow (omega_n (log2 n)))
-       in combine y0 y1 omegas
-  where
-    combine y0 y1 omegas
-      =  V.generate l (\i -> y0 V.! i + omegas V.! i * y1 V.! i)
-      <> V.generate l (\i -> y0 V.! i - omegas V.! i * y1 V.! i)
-      where
-        l = V.length y0
+fft omega_n vec = dft (omega_n (log2 (V.length vec))) vec
 
 -- | Inverse discrete Fourier transformation, uses FFT.
 inverseDft :: GaloisField k => (Int -> k) -> DFT k -> CoeffVec k
